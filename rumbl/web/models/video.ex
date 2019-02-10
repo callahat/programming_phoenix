@@ -20,5 +20,6 @@ defmodule Rumbl.Video do
     struct
     |> cast(params, @permitted_fields, [])
     |> validate_required([:url, :title, :description])
+    |> assoc_constraint(:category)
   end
 end
