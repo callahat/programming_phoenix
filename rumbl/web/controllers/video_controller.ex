@@ -1,14 +1,17 @@
 defmodule Rumbl.VideoController do
   use Rumbl.Web, :controller
 
+  plug :load_categories when action in [:new, :create, :edit, :update]
+
   alias Rumbl.Video
+  alias Rumbl.Category
 
   def action(conn, _) do
     apply(__MODULE__, action_name(conn), [conn, conn.params, conn.assigns.current_user])
   end
 
   def index(conn, _params, user) do
-    videos = Repo.all(user_videos(user)) |> Enum.map(fn v -> Repo.preload(v, :user) end)
+    videos = Repo.all(user_videos(user)) |> Enum.map(fn v -> Repo.preload(v, [:user, :category]) end)
     render(conn, "index.html", videos: videos)
   end
 
@@ -37,7 +40,7 @@ defmodule Rumbl.VideoController do
   end
 
   def show(conn, %{"id" => id}, user) do
-    video = Repo.get!(user_videos(user), id) |> Repo.preload(:user)
+    video = Repo.get!(user_videos(user), id) |> Repo.preload([:user, :category])
     render(conn, "show.html", video: video)
   end
 
@@ -75,5 +78,14 @@ defmodule Rumbl.VideoController do
 
   defp user_videos(user) do
     assoc(user, :videos)
+  end
+
+  defp load_categories(conn, _) do
+    categories =
+      Category
+      |> Category.alphabetical
+      |> Category.names_and_ids
+      |> Repo.all
+    assign(conn, :categories, categories)
   end
 end
