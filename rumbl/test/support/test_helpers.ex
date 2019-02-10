@@ -18,4 +18,10 @@ defmodule Rumbl.TestHelpers do
     |> Ecto.build_assoc(:videos, attrs)
     |> Repo.insert!()
   end
+
+  def insert_category(attrs \\ %{}) do
+    %Rumbl.Category{}
+    |> Rumbl.Category.changeset(attrs)
+    |> Repo.insert!()
+  end
 end
