@@ -1,66 +1,84 @@
-defmodule Rumbl.VideoControllerTest do
+defmodule VideoControllerTest do
   use Rumbl.ConnCase
 
+  import Plug.Conn, only: [assign: 3]
+
   alias Rumbl.Video
-  @valid_attrs %{description: "some content", title: "some content", url: "some content"}
-  @invalid_attrs %{}
+  @valid_attrs %{url: "http://youtu.be", title: "vid", description: "a vidya"}
+  @invalid_attrs %{title: "invalid"}
 
-  test "lists all entries on index", %{conn: conn} do
-    conn = get conn, video_path(conn, :index)
-    assert html_response(conn, 200) =~ "Listing videos"
-  end
-
-  test "renders form for new resources", %{conn: conn} do
-    conn = get conn, video_path(conn, :new)
-    assert html_response(conn, 200) =~ "New video"
-  end
-
-  test "creates resource and redirects when data is valid", %{conn: conn} do
-    conn = post conn, video_path(conn, :create), video: @valid_attrs
-    assert redirected_to(conn) == video_path(conn, :index)
-    assert Repo.get_by(Video, @valid_attrs)
-  end
-
-  test "does not create resource and renders errors when data is invalid", %{conn: conn} do
-    conn = post conn, video_path(conn, :create), video: @invalid_attrs
-    assert html_response(conn, 200) =~ "New video"
-  end
-
-  test "shows chosen resource", %{conn: conn} do
-    video = Repo.insert! %Video{}
-    conn = get conn, video_path(conn, :show, video)
-    assert html_response(conn, 200) =~ "Show video"
-  end
-
-  test "renders page not found when id is nonexistent", %{conn: conn} do
-    assert_error_sent 404, fn ->
-      get conn, video_path(conn, :show, -1)
+  setup %{conn: conn} = config do
+    if username = config[:login_as] do
+      user = insert_user(%{username: username})
+      conn = assign(build_conn(), :current_user, user)
+      {:ok, conn: conn, user: user}
+    else
+      :ok
     end
   end
 
-  test "renders form for editing chosen resource", %{conn: conn} do
-    video = Repo.insert! %Video{}
-    conn = get conn, video_path(conn, :edit, video)
-    assert html_response(conn, 200) =~ "Edit video"
+  @tag login_as: "maxheadroom"
+  test "lists all the user's videos on the index", %{conn: conn, user: user} do
+    user_video = insert_video(user, title: "Some video")
+    other_video = insert_video(insert_user(%{username: "Doug"}), title: "Porkchop Sandwiches")
+
+    conn = get conn, video_path(conn, :index)
+    assert html_response(conn, 200) =~ ~r/Listing videos/
+    assert String.contains?(conn.resp_body, user_video.title)
+    refute String.contains?(conn.resp_body, other_video.title)
   end
 
-  test "updates chosen resource and redirects when data is valid", %{conn: conn} do
-    video = Repo.insert! %Video{}
-    conn = put conn, video_path(conn, :update, video), video: @valid_attrs
-    assert redirected_to(conn) == video_path(conn, :show, video)
-    assert Repo.get_by(Video, @valid_attrs)
-  end
-
-  test "does not update chosen resource and renders errors when data is invalid", %{conn: conn} do
-    video = Repo.insert! %Video{}
-    conn = put conn, video_path(conn, :update, video), video: @invalid_attrs
-    assert html_response(conn, 200) =~ "Edit video"
-  end
-
-  test "deletes chosen resource", %{conn: conn} do
-    video = Repo.insert! %Video{}
-    conn = delete conn, video_path(conn, :delete, video)
+  @tag login_as: "maxheadroom"
+  test "creates user video and redirects", %{conn: conn, user: user} do
+    conn = post conn, video_path(conn, :create), video: @valid_attrs
     assert redirected_to(conn) == video_path(conn, :index)
-    refute Repo.get(Video, video.id)
+    assert Repo.get_by!(Video, @valid_attrs).user_id == user.id
   end
+
+  @tag login_as: "maxheadroom"
+  test "does not create video and renders errors when invalid", %{conn: conn, user: _user} do
+    count_before = video_count(Video)
+    conn = post conn, video_path(conn, :create), video: @invalid_attrs
+    assert html_response(conn, 200) =~ "check the errors"
+    assert video_count(Video) == count_before
+  end
+
+  @tag login_as: "maxheadroom"
+  test "authorizes actions against access by other users", %{conn: conn, user: owner} do
+    video = insert_video(owner, @valid_attrs)
+    non_owner = insert_user(%{username: "Slick"})
+    conn = assign(conn, :current_user, non_owner)
+
+    assert_error_sent :not_found, fn ->
+      get(conn, video_path(conn, :show, video))
+    end
+    assert_error_sent :not_found, fn ->
+      get(conn, video_path(conn, :edit, video))
+    end
+    assert_error_sent :not_found, fn ->
+      put(conn, video_path(conn, :update, video, video: @valid_attrs))
+    end
+    assert_error_sent :not_found, fn ->
+      delete(conn, video_path(conn, :delete, video))
+    end
+  end
+
+  test "requires user authentication on all actions", %{conn: conn} do
+    Enum.each([
+      get(conn, video_path(conn, :new)),
+      get(conn, video_path(conn, :index)),
+      get(conn, video_path(conn, :show, "123")),
+      get(conn, video_path(conn, :edit, "123")),
+      put(conn, video_path(conn, :update, "123", %{})),
+      post(conn, video_path(conn, :create, %{})),
+      delete(conn, video_path(conn, :delete, "123")),
+    ], &assert_redirect_when_unauthenticated(&1))
+  end
+
+  defp assert_redirect_when_unauthenticated(conn) do
+    assert html_response(conn, 302)
+    assert conn.halted
+  end
+
+  defp video_count(query), do: Repo.one(from v in query, select: count(v.id))
 end
