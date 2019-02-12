@@ -1,7 +1,6 @@
 <h2><%= @video.title %></h2>
 <div class="row">
   <div class="col-sm-7">
-<%= inspect data: [id: @video.id, player_id: player_id(@video)] %>
     <%= content_tag :div, id: "video", data: [id: @video.id, player_id: player_id(@video)] do %>
     <% end %>
   </div>

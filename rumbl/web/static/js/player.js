@@ -14,7 +14,7 @@ let Player = {
     this.player = new YT.Player(domId, {
       height: "360",
       width: "420",
-      video: playerId,
+      videoId: playerId,
       events: {
         "onReady": (event => onReady(event)),
         "onStateChange": (event => this.onPlayerStateChange(event))
