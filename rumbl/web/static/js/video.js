@@ -16,6 +16,10 @@ let Video = {
     let vidChannel   = socket.channel("videos:" + videoId)
 
     //TODO join the vidChannel
+    vidChannel.join()
+      .receive("ok", resp => console.log("joined the video channel", resp))
+      .receive("error", resp => console.log("join failed", resp))
+    vidChannel.on("ping", ({count}) => console.log("PING", count))
   }
 }
 
