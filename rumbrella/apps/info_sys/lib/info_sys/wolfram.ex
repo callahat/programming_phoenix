@@ -1,5 +1,6 @@
 defmodule InfoSys.Wolfram do
   import SweetXml
+  # import Logger
   alias InfoSys.Result
 
   def start_link(query, query_ref, owner, limit) do
@@ -23,10 +24,14 @@ defmodule InfoSys.Wolfram do
   end
 
   defp fetch_xml(query_str) do
+    # Logger.info("http://api.wolframalpha.com/v2/query" <>
+    #                       "?appid=#{app_id()}" <>
+    #                       "&input=#{URI.encode(query_str)}&format=plaintext")
     {:ok, {_, _, body}} = :httpc.request(
       String.to_char_list("http://api.wolframalpha.com/v2/query" <>
                           "?appid=#{app_id()}" <>
                           "&input=#{URI.encode(query_str)}&format=plaintext"))
+    # Logger.info(body)
     body
   end
 
