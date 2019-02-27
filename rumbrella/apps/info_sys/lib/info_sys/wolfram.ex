@@ -1,6 +1,7 @@
-defmodule Rumbl.InfoSys.Wolfram do
+defmodule InfoSys.Wolfram do
   import SweetXml
-  alias Rumbl.InfoSys.Result
+  # import Logger
+  alias InfoSys.Result
 
   def start_link(query, query_ref, owner, limit) do
     Task.start_link(__MODULE__, :fetch, [query, query_ref, owner, limit])
@@ -23,12 +24,16 @@ defmodule Rumbl.InfoSys.Wolfram do
   end
 
   defp fetch_xml(query_str) do
+    # Logger.info("http://api.wolframalpha.com/v2/query" <>
+    #                       "?appid=#{app_id()}" <>
+    #                       "&input=#{URI.encode(query_str)}&format=plaintext")
     {:ok, {_, _, body}} = :httpc.request(
       String.to_char_list("http://api.wolframalpha.com/v2/query" <>
                           "?appid=#{app_id()}" <>
                           "&input=#{URI.encode(query_str)}&format=plaintext"))
+    # Logger.info(body)
     body
   end
 
-  defp app_id, do: Application.get_env(:rumbl, :wolfram)[:app_id]
+  defp app_id, do: Application.get_env(:info_sys, :wolfram)[:app_id]
 end

@@ -1,6 +1,7 @@
 defmodule Rumbl.VideoChannel do
   use Rumbl.Web, :channel
   alias Rumbl.AnnotationView
+  import Logger
 
   def join("videos:" <> video_id, params, socket) do
     last_seen_id = params["last_seen_id"] || 0
@@ -33,7 +34,8 @@ defmodule Rumbl.VideoChannel do
     case Repo.insert(changeset) do
       {:ok, annotation} ->
         broadcast_annotation(socket, annotation)
-        if(String.match?("annotation.body", ~r/\?$/)) do
+        if(String.match?(annotation.body, ~r/\?$/)) do
+          Logger.info("Got a question, asking InfoSys")
           Task.start_link(fn -> compute_additional_info(annotation, socket) end)
         end
         {:reply, :ok, socket}
@@ -52,7 +54,11 @@ defmodule Rumbl.VideoChannel do
   end
 
   defp compute_additional_info(annotation, socket) do
-    for result <- Rumbl.InfoSys.compute(annotation.body, limit: 1, timeout: 20_000) do
+    Logger.info("Computing, asking InfoSys")
+    results = InfoSys.compute(annotation.body, limit: 1, timeout: 20_000)
+    Logger.info("Got #{ length results } results back")
+
+    for result <- results do
       attrs = %{url: result.url, body: result.text, at: annotation.at}
       info_changeset =
         Repo.get_by!(Rumbl.User, username: result.backend)
