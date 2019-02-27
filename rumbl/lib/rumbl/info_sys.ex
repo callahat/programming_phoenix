@@ -29,8 +29,8 @@ defmodule Rumbl.InfoSys do
   end
 
   defp await_results(children, opts) do
-    timeout = opts[:timeout] || 5000
-    timer = Process.send_after(self, :timeout, timeout)
+    timeout = opts[:timeout] || 10000
+    timer = Process.send_after(self(), :timeout, timeout)
     results = await_result(children, [], :infinity)
     cleanup(timer)
     results
