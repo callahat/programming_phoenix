@@ -1,0 +1,31 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<queryresult success='true'
+    error='false'
+    numpods='8'
+    datatypes='Maths'
+    timedout=''
+    timedoutpods=''
+    timing='3.14'
+    parsetiming='0.359'
+    parsetimedout='false'
+    recalculate=''
+    id='MSPa19751494gh669igh92e400003g4i71c994d95ffb'
+    host='http://www3.wolframalpha.com'
+    server='47'
+    related='http://www3.wolframalpha.com/api/v2/relatedQueries.jsp?id=MSPa19761494gh669igh92e400005g77cba9f6e4d1d22945721419846288130'
+    version='2.6'>
+ <pod title='Result'
+     scanner='Data'
+     id='Result'
+     position='200'
+     error='false'
+     numsubpods='1'
+     primary='true'>
+  <subpod title=''>
+   <microsources>
+    <microsource>Maths</microsource>
+   </microsources>
+   <plaintext>2</plaintext>
+  </subpod>
+ </pod>
+</queryresult>
